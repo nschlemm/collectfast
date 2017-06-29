@@ -2,7 +2,6 @@ import hashlib
 import logging
 
 from django.core.cache import caches
-from minio.error import ResponseError
 from minio_storage.storage import MinioStorage
 from storages.utils import safe_join
 
@@ -41,19 +40,21 @@ def get_remote_etag(storage, prefixed_path):
     if isinstance(storage, MinioStorage):
         try:
             normalized_path = prefixed_path.replace('\\', '/')
-            return storage.client.stat_object(storage.bucket_name, normalized_path)
-        except ResponseError:
+            return storage.client.stat_object(
+                storage.bucket_name, normalized_path).etag
+        except AttributeError:
             pass
-    normalized_path = safe_join(storage.location, prefixed_path).replace(
-        '\\', '/')
-    try:
-        return storage.bucket.get_key(normalized_path).etag
-    except AttributeError:
-        pass
-    try:
-        return storage.bucket.Object(normalized_path).e_tag
-    except:
-        pass
+    else:
+        normalized_path = safe_join(storage.location, prefixed_path).replace(
+            '\\', '/')
+        try:
+            return storage.bucket.get_key(normalized_path).etag
+        except AttributeError:
+            pass
+        try:
+            return storage.bucket.Object(normalized_path).e_tag
+        except:
+            pass
     return None
 
 
