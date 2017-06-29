@@ -2,6 +2,8 @@ import hashlib
 import logging
 
 from django.core.cache import caches
+from minio.error import ResponseError
+from minio_storage.storage import MinioStorage
 from storages.utils import safe_join
 
 from collectfast import settings
@@ -36,6 +38,12 @@ def get_remote_etag(storage, prefixed_path):
     """
     Get etag of path from S3 using boto or boto3.
     """
+    if isinstance(storage, MinioStorage):
+        try:
+            normalized_path = prefixed_path.replace('\\', '/')
+            return storage.client.stat_object(storage.bucket_name, normalized_path)
+        except ResponseError:
+            pass
     normalized_path = safe_join(storage.location, prefixed_path).replace(
         '\\', '/')
     try:

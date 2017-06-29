@@ -14,7 +14,11 @@ setup(
     url='https://github.com/jazzband/collectfast/',
     license='MIT License',
     include_package_data=True,
-    install_requires=['Django>=1.8', 'django-storages'],
+    install_requires=[
+        'Django>=1.8',
+        'django-minio-storage',
+        'django-storages'
+    ],
     classifiers=[
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
