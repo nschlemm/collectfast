@@ -43,9 +43,9 @@ def get_remote_etag(storage, prefixed_path):
             normalized_path = prefixed_path.replace('\\', '/')
             return storage.client.stat_object(
                 storage.bucket_name, normalized_path).etag
-        except ResponseError:
-            pass
         except AttributeError:
+            pass
+        except ResponseError:
             pass
     else:
         normalized_path = safe_join(storage.location, prefixed_path).replace(
@@ -69,6 +69,8 @@ def get_etag(storage, path, prefixed_path):
     etag = cache.get(cache_key, False)
     if etag is False:
         etag = get_remote_etag(storage, prefixed_path)
+        if etag:
+            etag = etag.strip('"').strip("'")
         cache.set(cache_key, etag)
     return etag
 
@@ -85,7 +87,7 @@ def get_file_hash(storage, path):
     Create md5 hash from file contents.
     """
     contents = storage.open(path).read()
-    file_hash = '"%s"' % hashlib.md5(contents).hexdigest()
+    file_hash = hashlib.md5(contents).hexdigest()
     return file_hash
 
 
@@ -95,6 +97,9 @@ def has_matching_etag(remote_storage, source_storage, path, prefixed_path):
     """
     storage_etag = get_etag(remote_storage, path, prefixed_path)
     local_etag = get_file_hash(source_storage, path)
+    if storage_etag and storage_etag != local_etag:
+        logger.debug("etag changed for %s: %s != %s" % (path, storage_etag,
+                                                        local_etag))
     return storage_etag == local_etag
 
 
